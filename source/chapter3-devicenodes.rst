@@ -988,3 +988,92 @@ each with their own on-chip L2 and a shared L3.
             };
         };
     };
+
+``*/export-symbols`` node
+-------------------------
+A devicetree node may have an export-symbols child node
+(`*/export-symbols`) that defines one or more export-symbol properties.
+
+Each property of the `export-symbols` node defines an alias local to it's
+parent. The property name specifies the alias name. The property value
+specifies the phandle to a node in the devicetree. For example, the
+property ``serial0 = <&main_uart0>`` defines ``serial0`` as the local alias
+to ``main_uart0``.
+
+Alias names shall be lowercase text strings of 1 to 31 characters from the
+following set of characters.
+
+.. tabularcolumns:: | c p{8cm} |
+.. table:: Valid characters for alias names
+
+   ========= ================
+   Character Description
+   ========= ================
+   0-9       digit
+   a-z       lowercase letter
+   \-        dash
+   ========= ================
+
+An alias value is a phandle to a node in the devicetree.
+
+Resolution of nodes using `export-symbols` follows the following rules
+depending on the context:
+
+No target involved
+~~~~~~~~~~~~~~~~~~~
+Properties of parent node use symbols from ``export-symbols``, but none of
+the subnodes will be able to use them. For example, the following code will
+resolve properly:
+
+.. code-block:: dts
+
+    / {
+        parent {
+            led = <&local_gpio 0 GPIO_ACTIVE_HIGH>;
+
+            export-symbols {
+                local_gpio = <&gpio0>;
+            };
+        };
+    }
+
+However, the code below is not valid:
+
+.. code-block:: dts
+
+    / {
+        parent {
+            child {
+                /* child node cannot access export-symbols */
+                led = <&local_gpio 0 GPIO_ACTIVE_HIGH>;
+            };
+
+            export-symbols {
+                local_gpio = <&gpio0>;
+            };
+        };
+    }
+
+Target is used in the base devicetree or overlays
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Any node/subnode property is free to use symbols from ``export-symbols``
+defined in the parent. To provide a concrete exampe, the following is
+valid:
+
+.. code-block:: dts
+
+    / {
+        parent {
+            export-symbols {
+                local_gpio = <&gpio0>;
+            };
+        };
+    }
+
+    &parent {
+        led = <&local_gpio 0 GPIO_ACTIVE_HIGH>;
+
+        child {
+            led = <&local_gpio 0 GPIO_ACTIVE_HIGH>;
+        };
+    };
